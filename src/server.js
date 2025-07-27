@@ -1,44 +1,60 @@
-// 1. Carrega as variáveis de ambiente
+// 1. Carrega as variáveis de ambiente do arquivo .env
 require('dotenv').config();
 
-// 2. Importa as dependências
+// 2. Importa as dependências necessárias
 const express = require('express');
 const db = require('./models');
+const errorHandlerMiddleware = require('./middleware/ErrorHandlerMiddleware');
 
-// 3. Importa os middlewares
-const ErrorHandlerMiddleware = require('./middleware/ErrorHandlerMiddleware'); // <-- NOME ATUALIZADO
-
-// 4. Importa os arquivos de rota com seus nomes padronizados
-const pessoaRoutes = require('./routes/pessoaRoutes.js'); // <-- NOME ATUALIZADO
+// 3. Importa os arquivos de rota
+const pessoaRoutes = require('./routes/pessoaRoutes.js');
 const authRoutes = require('./routes/authRoutes.js');
-const animalRoutes = require('./routes/animalRoutes.js'); // <-- NOME ATUALIZADO
+const animalRoutes = require('./routes/animalRoutes.js');
 
-// 5. Inicializa a aplicação Express
+// 4. Inicializa a aplicação Express
 const app = express();
 
-// 6. Configura middlewares da aplicação
+// 5. Configura o middleware para entender JSON
 app.use(express.json());
 
-// 7. Define as rotas principais da API
+// 6. Define as rotas principais da API
 app.use('/api/v1/pessoas', pessoaRoutes);
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/animais', animalRoutes);
 
-// 8. Registra o middleware de erro (DEPOIS DE TODAS AS ROTAS)
-app.use(ErrorHandlerMiddleware); // <-- NOME ATUALIZADO
+// 7. REGISTRA O MIDDLEWARE DE ERRO
+app.use(errorHandlerMiddleware);
 
-// 9. Define a porta do servidor
+// 8. Define a porta do servidor
 const PORT = process.env.PORT || 3333;
 
-// 10. Inicia o servidor após conectar ao banco de dados
+// 9. Inicia o servidor E GUARDA A REFERÊNCIA DELE
+let server;
 db.sequelize.authenticate()
   .then(() => {
     console.log('✅ Conexão com o banco de dados estabelecida com sucesso!');
-    app.listen(PORT, () => {
+    server = app.listen(PORT, () => { // <--- Guarda a referência aqui
       console.log(`🚀 Servidor rodando na porta ${PORT}`);
     });
   })
   .catch(err => {
     console.error('❌ Não foi possível conectar ao banco de dados:', err);
-    process.exit(1); 
+    process.exit(1);
   });
+
+// ↓↓↓ ADICIONE ESTE BLOCO NO FINAL DO ARQUIVO ↓↓↓
+// 10. Lógica de Graceful Shutdown
+const gracefulShutdown = () => {
+  console.log('🔌 Recebido sinal para desligar. Fechando conexões...');
+  server.close(() => {
+    console.log('✅ Servidor HTTP fechado.');
+    db.sequelize.close().then(() => {
+      console.log('✅ Conexão com o banco de dados fechada.');
+      process.exit(0);
+    });
+  });
+};
+
+// Ouve por sinais de término comuns
+process.on('SIGTERM', gracefulShutdown); // Sinal de término padrão
+process.on('SIGINT', gracefulShutdown);  // Sinal de interrupção (Ctrl+C)
