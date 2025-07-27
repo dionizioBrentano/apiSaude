@@ -2,31 +2,33 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('animais', {
+    await queryInterface.createTable('eventos', {
       id: {
         allowNull: false,
+        autoIncrement: true,
         primaryKey: true,
-        type: Sequelize.UUID,
-        defaultValue: Sequelize.UUIDV4
+        type: Sequelize.INTEGER
       },
-      nome: Sequelize.STRING,
-      apelido: {
+      entidade_id: {
+        type: Sequelize.UUID,
+        allowNull: false
+      },
+      tipo_evento: {
         type: Sequelize.STRING,
         allowNull: false
       },
-      especie: Sequelize.STRING,
-      raca: Sequelize.STRING,
-      sexo: Sequelize.STRING,
-      data_nascimento: Sequelize.DATEONLY,
-      cor: Sequelize.STRING,
-      tutor_id: {
+      dados_evento: {
+        type: Sequelize.JSON,
+        allowNull: false
+      },
+      executado_por_usuario_id: {
         type: Sequelize.UUID,
-        allowNull: false,
+        allowNull: true, // Permitir nulo para eventos de sistema ou auto-cadastro
         references: {
           model: 'pessoas',
           key: 'id'
         },
-        onDelete: 'CASCADE'
+        onDelete: 'SET NULL' // Alterado para SET NULL para não perder o evento se a pessoa for deletada
       },
       created_at: {
         allowNull: false,
@@ -39,6 +41,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('animais');
+    await queryInterface.dropTable('eventos');
   }
 };
