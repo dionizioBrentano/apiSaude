@@ -1,33 +1,48 @@
-require('dotenv').config();
 const express = require('express');
+const bodyParser = require('body-parser');
+const cors = require('cors');
 const path = require('path');
-const db = require('./models'); // Importa a conexão com o banco e todos os modelos
-const validarPessoa = require('./middleware/validarPessoa'); // Middleware de validação
 
-const PessoaController = require('./controllers/PessoaController');
+// CONFIANÇA NA LOCALIZAÇÃO: server.js está em api/src/
+// Portanto, para rotas em api/src/routes/, o caminho é './routes/'
+// E para 'public' em api/public/, o caminho é '../public/'
+
+// Importar suas rotas (usando caminho absoluto para máxima certeza)
+const routesPath = path.join(__dirname, 'routes'); // Caminho para a pasta 'routes'
+const pessoaRoutes = require(path.join(routesPath, 'pessoaRoutes')); // Importa pessoaRoutes.js
+const authRoutes = require(path.join(routesPath, 'authRoutes'));     // Importa authRoutes.js
+// const animalRoutes = require(path.join(routesPath, 'animalRoutes')); // Descomente e ajuste se usar
 
 const app = express();
-
-// Middleware para JSON
-app.use(express.json());
-
-// Middleware para arquivos estáticos
-app.use(express.static(path.join(__dirname, '../../public')));
-
-// Rota de cadastro de pessoas (US2.1 + US1.1)
-app.post('/api/v1/pessoas', validarPessoa, PessoaController.cadastrarPessoa);
-
-// Rota de validação de conta (US2.2)
-app.get('/api/v1/validar-conta', PessoaController.validarConta);
-
-// --- NOVA ROTA PARA ATUALIZAR CPF (US2.3) ---
-// Note: Essa rota por enquanto não tem autenticação, mas terá no futuro.
-// O middleware validarPessoa pode ser usado para validar o formato do CPF antes de chegar no controller.
-app.patch('/api/v1/pessoas/cpf', validarPessoa, PessoaController.atualizarCpf);
-
-
-// Inicialização do servidor (sem sync)
 const PORT = process.env.PORT || 3333;
-app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
+
+// Middlewares
+app.use(cors());
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
+// Serve os arquivos estáticos da pasta 'public'
+// 'public' está um nível acima de 'src', então '..' do __dirname (que é api/src/)
+app.use(express.static(path.join(__dirname, '..', 'public')));
+
+// Rotas da API
+app.use('/api/v1/pessoas', pessoaRoutes);
+app.use('/api/v1/auth', authRoutes);
+// app.use('/api/v1/animais', animalRoutes); // Descomente e ajuste se tiver esta rota para teste de permissão
+
+// Captura rotas não encontradas (404)
+app.use((req, res, next) => {
+    res.status(404).json({ message: 'Rota não encontrada' });
 });
+
+// Manipulador de erros global
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({ message: 'Erro interno do servidor', error: err.message });
+});
+
+// Inicia o servidor
+app.listen(PORT, () => {
+    console.log(`Servidor rodando na porta ${PORT}`);
+});
+    console.log(`Ratificando: Acesse a bancada de testes em http://localhost:${PORT}/index.html`);

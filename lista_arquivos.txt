@@ -1,0 +1,21 @@
+ O volume na unidade C n∆o tem nome.
+ O N£mero de SÇrie do Volume Ç 044C-10E0
+
+ Pasta de C:\qrdobem\api
+
+30/07/2025  01:27    <DIR>          .
+30/07/2025  01:27    <DIR>          ..
+29/07/2025  01:00               372 .env
+29/07/2025  02:58               310 .gitignore
+29/07/2025  02:58               318 .sequelizerc
+30/07/2025  01:27                 0 lista_arquivos.txt
+29/07/2025  17:16    <DIR>          modelos_antigos_backup
+30/07/2025  01:14    <DIR>          node_modules
+30/07/2025  01:14            97.797 package-lock.json
+30/07/2025  01:14               618 package.json
+29/07/2025  03:41    <DIR>          public
+29/07/2025  02:58    <DIR>          src
+29/07/2025  02:49            70.058 src+public20250729.zip
+29/07/2025  02:58             1.469 __setupDatabase.js
+               8 arquivo(s)        170.942 bytes
+               6 pasta(s)   445.215.162.368 bytes dispon°veis

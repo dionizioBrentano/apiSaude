@@ -1,0 +1,14 @@
+ O volume na unidade C n∆o tem nome.
+ O N£mero de SÇrie do Volume Ç 044C-10E0
+
+ Pasta de C:\qrdobem\api\src\routes
+
+30/07/2025  11:36    <DIR>          .
+30/07/2025  11:36    <DIR>          ..
+29/07/2025  02:58               656 animalRoutes.js
+30/07/2025  03:50               388 authRoutes.js
+29/07/2025  02:58             1.753 crudRoutes.js
+30/07/2025  11:36                 0 ListaDeArquivos.txt
+30/07/2025  11:15               880 pessoaRoutes.js
+               5 arquivo(s)          3.677 bytes
+               2 pasta(s)   443.039.641.600 bytes dispon°veis

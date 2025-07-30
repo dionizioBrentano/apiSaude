@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste da API de Cadastro</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; }
+        input, button { width: 100%; padding: 8px; margin-bottom: 10px; box-sizing: border-box; }
+        #log { background-color: #f0f0f0; border: 1px solid #ccc; padding: 10px; white-space: pre-wrap; font-family: monospace; }
+        button { background-color: #007bff; color: white; border: none; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+    </style>
+</head>
+<body>
+    <h1>Ferramenta de Teste - Cadastro de Usuário</h1>
+
+    <h2>Dados do Novo Usuário</h2>
+    <form id="cadastroForm">
+        <input type="text" id="nomeCompleto" placeholder="Nome Completo" value="Usuário HTML Teste">
+        <input type="email" id="email" placeholder="E-mail" value="html.teste@email.com">
+        <input type="password" id="senha" placeholder="Senha" value="senha123">
+        <input type="text" id="telefoneCelular" placeholder="Telefone Celular" value="51988776655">
+        <input type="date" id="dataNascimento" placeholder="Data de Nascimento" value="1995-03-20">
+        <input type="text" id="cpf" placeholder="CPF (opcional)">
+    </form>
+
+    <button onclick="iniciarCadastro()">1. Obter Token de Cadastro</button>
+    <button onclick="cadastrarUsuario()">2. Cadastrar Usuário</button>
+
+    <h2>Log de Respostas</h2>
+    <pre id="log">Aguardando ações...</pre>
+
+    <script>
+        const API_URL = 'http://localhost:3333/api/v1';
+        let standbyToken = null;
+
+        const log = (message) => {
+            document.getElementById('log').textContent = JSON.stringify(message, null, 2);
+            console.log(message);
+        };
+
+        // PASSO 1: Pega o token anônimo
+        async function iniciarCadastro() {
+            log('Iniciando cadastro...');
+            try {
+                const response = await fetch(`${API_URL}/auth/iniciar-cadastro`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    standbyToken = data.standby_token;
+                    log({ status: response.status, message: 'Token de standby recebido com sucesso!', token: standbyToken });
+                } else {
+                    log({ status: response.status, error: data });
+                }
+            } catch (error) {
+                log({ error: error.message });
+            }
+        }
+
+        // PASSO 2: Usa o token anônimo para cadastrar o usuário
+        async function cadastrarUsuario() {
+            if (!standbyToken) {
+                log({ error: 'Erro: Obtenha o token de cadastro primeiro (Passo 1).' });
+                return;
+            }
+
+            log('Enviando dados do usuário...');
+            const dadosUsuario = {
+                nomeCompleto: document.getElementById('nomeCompleto').value,
+                email: document.getElementById('email').value,
+                senha: document.getElementById('senha').value,
+                telefoneCelular: document.getElementById('telefoneCelular').value,
+                dataNascimento: document.getElementById('dataNascimento').value,
+                cpf: document.getElementById('cpf').value || null
+            };
+
+            try {
+                const response = await fetch(`${API_URL}/pessoas`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${standbyToken}`
+                    },
+                    body: JSON.stringify(dadosUsuario)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    log({ status: response.status, message: 'Usuário cadastrado com sucesso!', response: data });
+                } else {
+                    log({ status: response.status, error: data });
+                }
+            } catch (error) {
+                log({ error: error.message });
+            }
+        }
+    </script>
+</body>
+</html>
