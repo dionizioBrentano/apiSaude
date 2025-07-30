@@ -1,0 +1,26 @@
+{
+  "development": {
+    "username": "postodee_dioniziobrentano",
+    "password": "euGenio$2508",
+    "database": "postodee_qrdobem",
+    "host": "192.99.36.226",
+    "dialect": "mysql",
+    "port": "3306"
+  },
+  "test": {
+    "username": "postodee_dioniziobrentano",
+    "password": "euGenio$2508",
+    "database": "postodee_qrdobem",
+    "host": "192.99.36.226",
+    "dialect": "mysql",
+    "port": "3306"
+  },
+  "production": {
+    "username": "postodee_dioniziobrentano",
+    "password": "euGenio$2508",
+    "database": "postodee_qrdobem",
+    "host": "192.99.36.226",
+    "dialect": "mysql",
+    "port": "3306"
+  }
+}

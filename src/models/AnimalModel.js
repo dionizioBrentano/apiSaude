@@ -1,7 +1,6 @@
-// Definição do model 'Animal'
+// src/models/Animal.model.js
 module.exports = (sequelize, DataTypes) => {
   const Animal = sequelize.define('Animal', {
-    // --- 1. IDENTIFICAÇÃO BÁSICA ---
     id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
@@ -20,82 +19,113 @@ module.exports = (sequelize, DataTypes) => {
     },
     raca: {
       type: DataTypes.STRING,
+      allowNull: true,
       comment: 'Ex: SRD (Sem Raça Definida), Poodle, Siamês.'
     },
     corPredominante: {
       type: DataTypes.STRING,
+      allowNull: true,
       comment: 'Ex: Caramelo, Preto, Branco e Cinza.'
     },
     marcasDistintivas: {
       type: DataTypes.TEXT,
+      allowNull: true,
       comment: 'Características únicas. Ex: "Mancha branca na pata direita".'
     },
-
-    // --- 2. CARACTERÍSTICAS FÍSICAS ---
     porte: {
       type: DataTypes.ENUM('MINI', 'PEQUENO', 'MEDIO', 'GRANDE', 'GIGANTE'),
+      allowNull: true,
       comment: 'Porte físico do animal.'
     },
     pesoAproximadoKg: {
-      type: DataTypes.DECIMAL(5, 2), // Ex: 12.50 kg
+      type: DataTypes.DECIMAL(5, 2),
+      allowNull: true,
       comment: 'Peso aproximado em quilogramas.'
     },
     dataNascimentoAproximada: {
       type: DataTypes.DATEONLY,
+      allowNull: true,
     },
     sexo: {
       type: DataTypes.ENUM('MACHO', 'FEMEA', 'NAO_SABE'),
+      allowNull: true,
     },
     isCastrado: {
       type: DataTypes.BOOLEAN,
+      allowNull: true,
     },
     microchipId: {
       type: DataTypes.STRING,
+      allowNull: true,
       comment: 'Número do microchip de identificação, se houver.'
     },
-
-    // --- 3. SAÚDE E COMPORTAMENTO (DADOS SENSÍVEIS) ---
     comportamento: {
       type: DataTypes.TEXT,
+      allowNull: true,
       comment: 'Temperamento. Ex: "Dócil com crianças", "Assustado com estranhos".'
     },
     historicoSaude: {
       type: DataTypes.TEXT,
+      allowNull: true,
       comment: 'Condições pré-existentes ou observações importantes.'
     },
     medicamentosUsoContinuo: {
       type: DataTypes.TEXT,
+      allowNull: true,
       comment: 'Nome e dosagem dos medicamentos.'
     },
     alergiasConhecidas: {
       type: DataTypes.TEXT,
+      allowNull: true,
     },
-
-    // --- 4. CONTATOS E REFERÊNCIAS VETERINÁRIAS ---
     clinicaVeterinariaPrincipal: {
       type: DataTypes.STRING,
+      allowNull: true,
     },
     medicoVeterinarioPrincipal: {
       type: DataTypes.STRING,
+      allowNull: true,
     },
     contatoEmergenciaVeterinaria: {
       type: DataTypes.STRING,
+      allowNull: true,
       comment: 'Telefone de emergência da clínica ou profissional.'
     },
-    
+    tutorId: { // Chave estrangeira para a Pessoa tutora
+      type: DataTypes.UUID,
+      allowNull: true, // Pode ser null se a propriedade primária for da Organização
+      field: 'tutor_id'
+    },
+    organizacaoId: { // Chave estrangeira para a Organização/Grupo proprietária
+      type: DataTypes.UUID,
+      allowNull: true,
+      field: 'organizacao_id'
+    }
   }, {
     tableName: 'animais',
     timestamps: true,
     paranoid: true,
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
+    deletedAt: 'deleted_at',
   });
 
-  // --- ASSOCIAÇÕES ---
-  // Este bloco DEVE estar dentro da função module.exports
   Animal.associate = function(models) {
-    // Relação Animal -> Vacina (One-to-Many)
-    // Um Animal pode ter várias vacinas registradas.
-    this.hasMany(models.Vacina, { foreignKey: 'animalId', as: 'vacinas' });
+    this.belongsTo(models.Pessoa, { foreignKey: 'tutorId', as: 'tutor' });
+    this.belongsTo(models.Organizacao, { foreignKey: 'organizacaoId', as: 'organizacao' });
 
+    this.hasMany(models.Imagem, {
+      foreignKey: 'ownerId',
+      constraints: false,
+      scope: { ownerType: 'ANIMAL' },
+      as: 'imagens'
+    });
+    this.hasMany(models.AtributoPersonalizado, {
+      foreignKey: 'ownerId',
+      constraints: false,
+      scope: { ownerType: 'ANIMAL' },
+      as: 'atributosPersonalizados'
+    });
     // Relação polimórfica Animal -> EntidadeProtegida (One-to-One)
     this.hasOne(models.EntidadeProtegida, {
       foreignKey: 'entidadeId',
@@ -103,22 +133,8 @@ module.exports = (sequelize, DataTypes) => {
       scope: { tipo: 'ANIMAL' },
       as: 'entidadeProtegida'
     });
-
-    // Relação polimórfica Animal -> Imagem (One-to-Many)
-    this.hasMany(models.Imagem, {
-      foreignKey: 'ownerId',
-      constraints: false,
-      scope: { ownerType: 'ANIMAL' },
-      as: 'imagens'
-    });
-
-    // Relação polimórfica Animal -> AtributoPersonalizado (One-to-Many)
-    this.hasMany(models.AtributoPersonalizado, {
-      foreignKey: 'ownerId',
-      constraints: false,
-      scope: { ownerType: 'ANIMAL' },
-      as: 'atributos'
-    });
+    // Se houver Vacina, adicione aqui (Vacina.model.js precisa ser criado)
+    // this.hasMany(models.Vacina, { foreignKey: 'animalId', as: 'vacinas' });
   };
 
   return Animal;

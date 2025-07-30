@@ -1,5 +1,6 @@
-const { models } = require('../models');
-const Pessoa = models.Pessoa;
+// src/controllers/AuthController.js
+const db = require('../models'); // CORREÇÃO: Importa o objeto 'db' que o models/index.js exporta
+const Pessoa = db.Pessoa;       // CORREÇÃO: Acessa o modelo Pessoa através do objeto 'db'
 const jwt = require('jsonwebtoken');
 
 class AuthController {
@@ -15,14 +16,14 @@ class AuthController {
 
             const token = jwt.sign(
                 payload,
-                process.env.JWT_SECRET,
+                process.env.JWT_SECRET, // Certifique-se que JWT_SECRET está definido no seu .env
                 { expiresIn: '15m' } // Validade curta de 15 minutos
             );
 
             return res.status(200).json({ standby_token: token });
 
         } catch (error) {
-            next(error);
+            next(error); // Encaminha o erro para o middleware de tratamento de erros global
         }
     }
 
@@ -43,7 +44,8 @@ class AuthController {
                 return res.status(401).json({ message: 'Credenciais inválidas.' });
             }
             
-            const senhaValida = await pessoa.validarSenha(senha);
+            // Certifique-se que o método 'validarSenha' existe no seu modelo Pessoa
+            const senhaValida = await pessoa.validarSenha(senha); 
 
             if (!senhaValida) {
                 return res.status(401).json({ message: 'Credenciais inválidas.' });
@@ -57,18 +59,24 @@ class AuthController {
 
             const token = jwt.sign(
                 payload,
-                process.env.JWT_SECRET,
-                { expiresIn: process.env.JWT_EXPIRES_IN || '1d' }
+                process.env.JWT_SECRET, // Certifique-se que JWT_SECRET está definido no seu .env
+                { expiresIn: process.env.JWT_EXPIRES_IN || '1d' } // Validade do token de login
             );
 
             return res.status(200).json({
                 message: 'Login bem-sucedido!',
-                token: token
+                token: token,
+                user: { // Retorna algumas informações do usuário logado
+                    id: pessoa.id,
+                    nome: pessoa.nomeCompleto,
+                    email: pessoa.email,
+                    statusConta: pessoa.statusConta
+                }
             });
 
         } catch (error) {
             console.error('Erro no processo de login:', error);
-            next(error);
+            next(error); // Encaminha o erro para o middleware de tratamento de erros global
         }
     }
 }
