@@ -3,15 +3,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const path = require('path');
 
-// CONFIANÇA NA LOCALIZAÇÃO: server.js está em api/src/
-// Portanto, para rotas em api/src/routes/, o caminho é './routes/'
-// E para 'public' em api/public/, o caminho é '../public/'
-
-// Importar suas rotas (usando caminho absoluto para máxima certeza)
-const routesPath = path.join(__dirname, 'routes'); // Caminho para a pasta 'routes'
-const pessoaRoutes = require(path.join(routesPath, 'pessoaRoutes')); // Importa pessoaRoutes.js
-const authRoutes = require(path.join(routesPath, 'authRoutes'));     // Importa authRoutes.js
-// const animalRoutes = require(path.join(routesPath, 'animalRoutes')); // Descomente e ajuste se usar
+console.log('--- server.js EXECUTADO (versão final com rota de Organizacoes) ---');
 
 const app = express();
 const PORT = process.env.PORT || 3333;
@@ -20,15 +12,20 @@ const PORT = process.env.PORT || 3333;
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-
-// Serve os arquivos estáticos da pasta 'public'
-// 'public' está um nível acima de 'src', então '..' do __dirname (que é api/src/)
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // Rotas da API
+const routesDir = path.join(__dirname, 'routes');
+const pessoaRoutes = require(path.join(routesDir, 'pessoaRoutes'));
+const authRoutes = require(path.join(routesDir, 'authRoutes'));
+const organizacaoRoutes = require(path.join(routesDir, 'organizacaoRoutes')); // NOVO: Importa rota de Organizacoes
+
 app.use('/api/v1/pessoas', pessoaRoutes);
 app.use('/api/v1/auth', authRoutes);
-// app.use('/api/v1/animais', animalRoutes); // Descomente e ajuste se tiver esta rota para teste de permissão
+app.use('/api/v1/organizacoes', organizacaoRoutes); // NOVO: Usa rota de Organizacoes
+// Remova ou comente esta linha se não tiver rota de animais ainda:
+// const animalRoutes = require(path.join(routesDir, 'animalRoutes'));
+// app.use('/api/v1/animais', animalRoutes);
 
 // Captura rotas não encontradas (404)
 app.use((req, res, next) => {
@@ -41,8 +38,9 @@ app.use((err, req, res, next) => {
     res.status(500).json({ message: 'Erro interno do servidor', error: err.message });
 });
 
-// Inicia o servidor
+const db = require('./models'); 
+
 app.listen(PORT, () => {
     console.log(`Servidor rodando na porta ${PORT}`);
+    console.log(`Acesse a bancada de testes em http://localhost:${PORT}/index.html`);
 });
-    console.log(`Ratificando: Acesse a bancada de testes em http://localhost:${PORT}/index.html`);

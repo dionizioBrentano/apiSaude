@@ -40,6 +40,10 @@
                 <label for="userId">ID do Usuário Criado</label>
                 <input type="text" id="userId" readonly>
             </div>
+             <div>
+                <label for="orgId">ID da Org. Raiz Criada</label>
+                <input type="text" id="orgId" readonly>
+            </div>
             <div>
                 <label for="validationLink">Link de Validação (Apenas para Teste)</label>
                 <input type="text" id="validationLink" readonly>
@@ -48,7 +52,7 @@
     </fieldset>
 
     <fieldset>
-        <legend>Fase 1 & 2: Cadastrar Usuário</legend>
+        <legend>Fase 1 & 2: Cadastrar Usuário e Validação</legend>
         <div class="input-mode">
             <label><input type="radio" name="inputMode" value="form" checked onchange="toggleInputMode()"> Formulário</label>
             <label><input type="radio" name="inputMode" value="json" onchange="toggleInputMode()"> JSON Bruto</label>
@@ -63,25 +67,41 @@
             <label for="telefoneCelular">Telefone Celular</label>
             <input type="text" id="telefoneCelular" value="51911112222">
             <label for="dataNascimento">Data de Nascimento (Opcional)</label>
-            <input type="date" id="dataNascimento" value=""> <label for="cpf">CPF (opcional)</label>
+            <input type="date" id="dataNascimento" value=""> 
+            <label for="cpf">CPF (opcional)</label>
             <input type="text" id="cpf" value="12345678901">
+            <button onclick="generateRandomData()">Gerar Dados Aleatórios</button>
         </div>
         <div id="jsonContainer" style="display: none;">
             <textarea id="jsonInput"></textarea>
         </div>
         <button onclick="iniciarCadastro()">1. Obter Token de Standby</button>
         <button onclick="cadastrarUsuario()" id="btnCadastrar">2. Cadastrar Usuário</button>
+        <button onclick="validarContaPelaAPI()" id="btnValidarConta">3. Validar Conta Via API</button>
     </fieldset>
 
     <fieldset>
-        <legend>Fase 3, 4 & 5: Permissões e Ativação</legend>
-        <button onclick="testarPermissaoFalha()" id="btnFalha">3. Testar Permissão (Deve Falhar se PENDENTE)</button>
-        <button onclick="validarContaPelaAPI()" id="btnValidarConta">4. Validar Conta Via API</button>
-        <button onclick="testarPermissaoSucesso()" id="btnSucesso">5. Testar Permissão (Deve Funcionar)</button>
+        <legend>Fase 4: Login de Usuário</legend>
+        <label for="loginEmail">E-mail de Login</label>
+        <input type="email" id="loginEmail" value="joana.dev@email.com">
+        <label for="loginSenha">Senha de Login</label>
+        <input type="password" id="loginSenha" value="senha_super_segura_123">
+        <button onclick="fazerLogin()">4. Fazer Login</button>
     </fieldset>
 
     <fieldset>
-        <legend>Teste de Atualização de CPF (Foco no 404)</legend>
+        <legend>Fase 5: Criação de Subgrupo (US1.2)</legend>
+        <label for="subgrupoNome">Nome do Novo Subgrupo</label>
+        <input type="text" id="subgrupoNome" value="Subgrupo Familiar">
+        <label for="subgrupoOrgPaiId">ID da Organização Pai (Opcional)</label>
+        <input type="text" id="subgrupoOrgPaiId" placeholder="Deixe em branco para usar a Org Raiz do usuário logado">
+        <button onclick="criarSubgrupo()">5. Criar Subgrupo</button>
+    </fieldset>
+
+    <fieldset>
+        <legend>Testes Adicionais</legend>
+        <button onclick="testarPermissaoFalha()" id="btnFalha">Testar Permissão (Deve Falhar se PENDENTE)</button>
+        <button onclick="testarPermissaoSucesso()" id="btnSucesso">Testar Permissão (Deve Funcionar)</button>
         <label for="cpfAtualizacao">Novo CPF para Atualização</label>
         <input type="text" id="cpfAtualizacao" value="12345678901">
         <button onclick="atualizarCpfUsuario()">Atualizar CPF (PATCH)</button>
@@ -93,13 +113,13 @@
     </fieldset>
 
     <script>
-        // ATENÇÃO: Ajuste a URL da API se o seu servidor estiver em um endereço diferente ou porta diferente
         const API_URL = 'http://localhost:3333/api/v1'; 
         let state = {
             standbyToken: null,
             loginToken: null,
             userId: null,
-            validationLink: null // Para armazenar o link de validação
+            orgId: null, // Para armazenar o ID da organização raiz
+            validationLink: null 
         };
         const templates = {
             pessoa: {
@@ -107,17 +127,11 @@
                 email: "joana.dev@email.com",
                 senha: "senha_super_segura_123",
                 telefoneCelular: "51911112222",
-                dataNascimento: "", // Opcional
-                cpf: "12345678901" // Opcional
+                dataNascimento: "",
+                cpf: "12345678901"
             },
             animal: {
-                nome: "Bit",
-                apelido: "Byte",
-                especie: "Cão",
-                raca: "Vira-lata Caramelo",
-                sexo: "Macho",
-                dataNascimento: "2023-01-01",
-                cor: "Caramelo"
+                nome: "Bit", apelido: "Byte", especie: "Cão", raca: "Vira-lata Caramelo", sexo: "Macho", dataNascimento: "2023-01-01", cor: "Caramelo"
             }
         };
 
@@ -125,7 +139,21 @@
         const standbyTokenEl = document.getElementById('standbyToken');
         const loginTokenEl = document.getElementById('loginToken');
         const userIdEl = document.getElementById('userId');
+        const orgIdEl = document.getElementById('orgId'); // Elemento para o ID da organização
         const validationLinkEl = document.getElementById('validationLink');
+
+        const nomeCompletoEl = document.getElementById('nomeCompleto');
+        const emailEl = document.getElementById('email');
+        const senhaEl = document.getElementById('senha');
+        const telefoneCelularEl = document.getElementById('telefoneCelular');
+        const dataNascimentoEl = document.getElementById('dataNascimento');
+        const cpfEl = document.getElementById('cpf');
+
+        const loginEmailEl = document.getElementById('loginEmail');
+        const loginSenhaEl = document.getElementById('loginSenha');
+
+        const subgrupoNomeEl = document.getElementById('subgrupoNome');
+        const subgrupoOrgPaiIdEl = document.getElementById('subgrupoOrgPaiId');
 
         function log(message) {
             logEl.textContent = JSON.stringify(message, null, 2);
@@ -136,6 +164,7 @@
             standbyTokenEl.value = state.standbyToken || '';
             loginTokenEl.value = state.loginToken || '';
             userIdEl.value = state.userId || '';
+            orgIdEl.value = state.orgId || ''; // Atualiza o ID da organização na UI
             validationLinkEl.value = state.validationLink || '';
         }
 
@@ -195,14 +224,12 @@
             let dadosUsuario;
             if (isForm) {
                 dadosUsuario = {
-                    nomeCompleto: document.getElementById('nomeCompleto').value,
-                    email: document.getElementById('email').value,
-                    senha: document.getElementById('senha').value,
-                    telefoneCelular: document.getElementById('telefoneCelular').value,
-                    // Garante que dataNascimento seja null se estiver vazio
-                    dataNascimento: document.getElementById('dataNascimento').value || null,
-                    // Garante que cpf seja null se estiver vazio
-                    cpf: document.getElementById('cpf').value || null 
+                    nomeCompleto: nomeCompletoEl.value,
+                    email: emailEl.value,
+                    senha: senhaEl.value,
+                    telefoneCelular: telefoneCelularEl.value,
+                    dataNascimento: dataNascimentoEl.value || null,
+                    cpf: cpfEl.value || null 
                 };
             } else {
                 try {
@@ -213,32 +240,20 @@
                 }
             }
             log("Cadastrando usuário com Token de Standby...");
-            // A rota de cadastro não precisa do standbyToken no header se ele for validado no corpo ou em outro middleware
-            // No entanto, se seu backend espera um header Authorization com Bearer standby_token, descomente a linha abaixo
             const result = await apiCall('/pessoas', 'POST', state.standbyToken, dadosUsuario); 
-            // const result = await apiCall('/pessoas', 'POST', null, dadosUsuario); // Se o standbyToken não for via Authorization header
 
             if (result.ok) {
-                // Se a API de cadastro já retornar um token de login, armazene-o
                 state.loginToken = result.data.token || null; 
-                state.userId = result.data.pessoa.id; // Supondo que a resposta inclua 'pessoa.id'
-                state.validationLink = result.data.linkValidacaoParaTeste; // Supondo que a resposta inclua o link
+                state.userId = result.data.pessoa.id;
+                state.orgId = result.data.organizacaoRaizId; // <--- FIX: Captura o ID da organização raiz diretamente
+                state.validationLink = result.data.linkValidacaoParaTeste; 
                 updateStateUI();
                 log("Usuário cadastrado com sucesso! Verifique o link de validação.");
+                loginEmailEl.value = dadosUsuario.email;
+                loginSenhaEl.value = dadosUsuario.senha;
             } else {
                 log("Falha ao cadastrar usuário.");
             }
-        }
-
-        async function testarPermissaoFalha() {
-            if (!state.loginToken) {
-                log({ error: 'Cadastre um usuário e obtenha o Token de Login primeiro.'});
-                return;
-            }
-            log("Tentando criar animal com token de usuário PENDENTE. Esperando erro 403 (ou similar)...");
-            // Nota: O método POST /animais pode retornar 403 se o usuário PENDENTE não tiver permissão.
-            // Ajuste o corpo da requisição 'templates.animal' se seu endpoint de animais espera dados diferentes.
-            await apiCall('/animais', 'POST', state.loginToken, templates.animal);
         }
 
         async function validarContaPelaAPI() {
@@ -247,20 +262,73 @@
                 return;
             }
             log(`Validando conta usando o link: ${state.validationLink}`);
-            // Chamando o link de validação diretamente (GET ou POST, dependendo da sua API)
-            // Assumindo que seu endpoint de validação é um GET e usa o token da URL
-            const result = await apiCall(state.validationLink, 'GET', null, null, true); // true indica que é uma URL completa
-            // Ou se for um POST para um endpoint específico (ex: /validar-conta) e o token for no corpo:
-            // const tokenParam = new URLSearchParams(state.validationLink.split('?')[1]).get('token');
-            // const result = await apiCall('/validar-conta', 'POST', null, { token: tokenParam });
+            const result = await apiCall(state.validationLink, 'GET', null, null, true); 
 
             if (result.ok) {
                 log("Conta validada com sucesso! Tente testar as permissões novamente.");
-                // Opcional: Atualize o status da conta do usuário no UI, se a resposta der o status
-                // state.loginToken pode precisar ser atualizado ou um novo login feito para refletir o status ATIVO_BASICO
             } else {
                 log("Falha ao validar conta.");
             }
+        }
+
+        async function fazerLogin() {
+            const email = loginEmailEl.value;
+            const senha = loginSenhaEl.value;
+
+            if (!email || !senha) {
+                log({ error: 'Email e senha de login são obrigatórios.' });
+                return;
+            }
+            log(`Tentando login para o email: ${email}...`);
+            const result = await apiCall('/auth/login', 'POST', null, { email, senha });
+
+            if (result.ok) {
+                state.loginToken = result.data.token;
+                state.userId = result.data.user.id;
+                updateStateUI();
+                log("Login bem-sucedido! Token atualizado.");
+            } else {
+                log("Falha no login.");
+            }
+        }
+
+        async function criarSubgrupo() {
+            if (!state.loginToken) {
+                log({ error: 'Faça o login primeiro para criar um subgrupo.' });
+                return;
+            }
+
+            const subgrupoNome = subgrupoNomeEl.value;
+            let organizacaoPaiId = subgrupoOrgPaiIdEl.value || state.orgId; // Usa o ID da org raiz do estado se não preenchido
+
+            if (!subgrupoNome || !organizacaoPaiId) {
+                log({ error: 'Nome do subgrupo e ID da organização pai são obrigatórios.' });
+                return;
+            }
+
+            log(`Tentando criar subgrupo '${subgrupoNome}' sob organização pai ID: ${organizacaoPaiId}...`);
+            const result = await apiCall('/organizacoes', 'POST', state.loginToken, { 
+                nome: subgrupoNome, 
+                organizacaoPaiId: organizacaoPaiId,
+                tipo: 'GRUPO' // Assumimos tipo GRUPO para subgrupos
+            });
+
+            if (result.ok) {
+                log("Subgrupo criado com sucesso!");
+                log(result.data);
+            } else {
+                log("Falha ao criar subgrupo.");
+            }
+        }
+
+
+        async function testarPermissaoFalha() {
+            if (!state.loginToken) {
+                log({ error: 'Cadastre um usuário e obtenha o Token de Login primeiro.'});
+                return;
+            }
+            log("Tentando criar animal com token de usuário PENDENTE. Esperando erro 403 (ou similar)...");
+            await apiCall('/animais', 'POST', state.loginToken, templates.animal);
         }
 
         async function testarPermissaoSucesso() {
@@ -269,7 +337,6 @@
                 return;
             }
             log("Tentando criar animal com token de usuário ATIVO. Esperando sucesso 201...");
-            // Este teste deve funcionar após a conta ser ativada e o token de login ter as permissões corretas.
             await apiCall('/animais', 'POST', state.loginToken, templates.animal);
         }
 
@@ -278,11 +345,9 @@
                 log({ error: 'Cadastre e logue um usuário para atualizar o CPF.' });
                 return;
             }
-            const cpfParaAtualizar = document.getElementById('cpfAtualizacao').value;
+            const cpfParaAtualizar = cpfEl.value; 
 
-            // O PessoaController.atualizarCpf espera 'email' e 'cpf' no corpo da requisição, não ID.
-            // Precisamos do email do usuário logado para enviar.
-            const userEmail = document.getElementById('email').value; // Usamos o email do formulário de cadastro
+            const userEmail = emailEl.value;
 
             if (!userEmail) {
                 log({ error: 'Email do usuário não disponível no formulário de cadastro para atualização de CPF.' });
@@ -292,14 +357,77 @@
             const body = { email: userEmail, cpf: cpfParaAtualizar };
 
             log(`Tentando atualizar CPF do usuário ${userEmail} para ${cpfParaAtualizar} via PATCH /pessoas/cpf...`);
-            // Esta rota requer autenticação, então passamos o loginToken
             await apiCall(`/pessoas/cpf`, 'PATCH', state.loginToken, body);
+        }
+
+
+        // Funções para geração de dados dinâmicos
+        function generateRandomString(length) {
+            let result = '';
+            const characters = 'abcdefghijklmnopqrstuvwxyz';
+            const charactersLength = characters.length;
+            for (let i = 0; i < length; i++) {
+                result += characters.charAt(Math.floor(Math.random() * charactersLength));
+            }
+            return result;
+        }
+
+        function generateRandomFirstName() {
+            const names = ["Maria", "João", "Ana", "Pedro", "Lucas", "Julia", "Fernanda", "Rafael", "Camila", "Bruno"];
+            return names[Math.floor(Math.random() * names.length)];
+        }
+
+        function generateRandomLastName() {
+            const surnames = ["Silva", "Santos", "Oliveira", "Souza", "Pereira", "Lima", "Costa", "Rodrigues", "Almeida", "Nascimento"];
+            return surnames[Math.floor(Math.random() * surnames.length)];
+        }
+
+        function generateRandomPhoneNumber() {
+            const ddd = "51";
+            let number = "9"; 
+            for (let i = 0; i < 8; i++) {
+                number += Math.floor(Math.random() * 10);
+            }
+            return `+55${ddd}${number}`;
+        }
+
+        function generateValidCpf() {
+            function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+            function mod(dividend, divisor) { return Math.round(dividend - (Math.floor(dividend / divisor) * divisor)); }
+            const n = 9;
+            const n1 = rand(0, n), n2 = rand(0, n), n3 = rand(0, n), n4 = rand(0, n), n5 = rand(0, n), n6 = rand(0, n), n7 = rand(0, n), n8 = rand(0, n), n9 = rand(0, n);
+            let d1 = n9 * 2 + n8 * 3 + n7 * 4 + n6 * 5 + n5 * 6 + n4 * 7 + n3 * 8 + n2 * 9 + n1 * 10;
+            d1 = 11 - (mod(d1, 11));
+            if (d1 >= 10) d1 = 0;
+            let d2 = d1 * 2 + n9 * 3 + n8 * 4 + n7 * 5 + n6 * 6 + n5 * 7 + n4 * 8 + n3 * 9 + n2 * 10 + n1 * 11;
+            d2 = 11 - (mod(d2, 11));
+            if (d2 >= 10) d2 = 0;
+            return `${n1}${n2}${n3}${n4}${n5}${n6}${n7}${n8}${n9}${d1}${d2}`;
+        }
+
+        function generateRandomData() {
+            const firstName = generateRandomFirstName();
+            const lastName = generateRandomLastName();
+            const fullName = `${firstName} ${lastName}`;
+            const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}@postodeenfermagem.com.br`;
+            const phone = generateRandomPhoneNumber();
+            const cpf = generateValidCpf();
+
+            nomeCompletoEl.value = fullName;
+            emailEl.value = email;
+            telefoneCelularEl.value = phone;
+            cpfEl.value = cpf;
+
+            log("Dados aleatórios gerados no formulário.");
+            loginEmailEl.value = email;
+            loginSenhaEl.value = templates.pessoa.senha;
         }
 
 
         // Inicializa a UI
         toggleInputMode();
-        updateStateUI(); // Garante que os campos de estado estejam vazios ao carregar
+        updateStateUI(); 
+        generateRandomData(); 
     </script>
 </body>
 </html>

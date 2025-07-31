@@ -1,57 +1,38 @@
-// src/middleware/validarPessoa.js
-// Importa a função validarCPF do módulo de utilidades
+// api/src/middleware/validarPessoa.js
+
 const { validarCPF } = require('../utils/cpfValidator');
 
-function validarPessoa(req, res, next) {
-  console.log('--- [VALIDAR PESSOA MIDDLEWARE] INICIANDO VALIDAÇÃO ---');
-  console.log('Dados recebidos no BODY:', req.body);
-  try {
-    // Note: 'nomeCompleto' e 'telefoneCelular' são nomes dos campos no body e modelo.
-    // O 'cpf' no body da requisição é o CPF em string.
-    const { nomeCompleto, email, telefoneCelular, cpf } = req.body;
+const validarPessoa = (req, res, next) => {
+    const { nomeCompleto, email, senha, telefoneCelular, dataNascimento, cpf } = req.body;
 
-    // Validação de Email
-    console.log('[VALIDAR PESSOA MIDDLEWARE] Verificando email...');
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      console.error('[VALIDAR PESSOA MIDDLEWARE] ERRO: Email inválido - Validação do Middleware.', { email });
-      return res.status(400).json({ error: 'Email inválido.' });
-    } else {
-      console.log('[VALIDAR PESSOA MIDDLEWARE] Email OK.');
+    // Validação de nomeCompleto
+    if (!nomeCompleto || nomeCompleto.length < 3) {
+        return res.status(400).json({ message: 'Nome completo é obrigatório e deve ter pelo menos 3 caracteres.' });
     }
 
-    // Validação de Telefone Celular
-    console.log('[VALIDAR PESSOA MIDDLEWARE] Verificando telefoneCelular...');
-    // Remove tudo exceto dígitos e o '+' do telefone antes de validar.
-    const cleanedPhone = telefoneCelular ? telefoneCelular.replace(/[^\d+]/g, '') : '';
-    
-    // Regex: Opcional '+' no início, seguido por 10 a 14 dígitos (padrão internacional de 7 a 15 dígitos sem +)
-    if (!telefoneCelular || !/^(\+\d{1,3})?\d{10,14}$/.test(cleanedPhone)) {
-      console.error('[VALIDAR PESSOA MIDDLEWARE] ERRO: Telefone celular inválido - Validação do Middleware.', { telefoneCelular, cleanedPhone });
-      return res.status(400).json({ error: 'Telefone inválido. Formato esperado: +DDDNDigitos ou DDDNDigitos (apenas números após o + opcional).' });
-    } else {
-      console.log('[VALIDAR PESSOA MIDDLEWARE] Telefone celular OK.');
+    // Validação de e-mail (formato básico)
+    if (!email || !/\S+@\S+\.\S+/.test(email)) {
+        return res.status(400).json({ message: 'E-mail inválido.' });
     }
 
-    // Validação de CPF (se presente no body)
-    // Agora usando a função importada de src/utils/cpfValidator.js
-    console.log('[VALIDAR PESSOA MIDDLEWARE] Verificando CPF...');
-    if (cpf && !validarCPF(cpf)) { // Chama a função validarCPF importada
-      console.error('[VALIDAR PESSOA MIDDLEWARE] ERRO: CPF inválido - Validação do Middleware.', { cpf });
-      return res.status(400).json({ error: 'CPF inválido.' });
-    } else {
-      console.log('[VALIDAR PESSOA MIDDLEWARE] CPF OK (se fornecido).');
+    // Validação de senha (mínimo 6 caracteres, com números e letras)
+    if (!senha || senha.length < 6 || !/[a-zA-Z]/.test(senha) || !/[0-9]/.test(senha)) {
+        return res.status(400).json({ message: 'Senha inválida. Deve ter pelo menos 6 caracteres, incluindo letras e números.' });
     }
-    
-    console.log('--- [VALIDAR PESSOA MIDDLEWARE] VALIDAÇÃO CONCLUÍDA. CHAMANDO NEXT() ---');
-    next(); // Continua para o próximo middleware ou controller
-  } catch (error) {
-    console.error('------- [VALIDAR PESSOA MIDDLEWARE] ERRO INESPERADO (CATCH) -------');
-    console.error('Tipo de Erro:', error.name);
-    console.error('Mensagem de Erro:', error.message);
-    console.error('Stack Trace:', error.stack);
-    console.error('----------------------------------------------------');
-    return res.status(500).json({ error: 'Erro interno do servidor no middleware de validação.' });
-  }
-}
+
+    // Validação de telefone (ajustado para aceitar + no início)
+    if (!telefoneCelular || !/^\+?\d{10,15}$/.test(telefoneCelular)) {
+        return res.status(400).json({ message: 'Telefone celular inválido. Use formato como +5551987654321 ou 51987654321.' });
+    }
+
+    // Validação de CPF (se fornecido)
+    if (cpf) {
+        if (!validarCPF(cpf)) {
+            return res.status(400).json({ message: 'CPF inválido ou com formato incorreto.' });
+        }
+    }
+
+    next();
+};
 
 module.exports = validarPessoa;

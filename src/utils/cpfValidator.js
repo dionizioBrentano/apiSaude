@@ -1,29 +1,56 @@
-// src/utils/cpfValidator.js
+// api/src/utils/cpfValidator.js
 
-function validarCPF(cpf) {
-    if (!cpf) return false; // CPF não pode ser vazio
-    cpf = String(cpf).replace(/[^\d]+/g, ''); // Remove caracteres não numéricos
-    if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false; // Deve ter 11 dígitos e não ser sequência repetida
+const validarCPF = (cpf) => {
+    if (!cpf) {
+        return false;
+    }
 
-    let soma = 0;
-    let resto;
+    // Remove caracteres não numéricos
+    const cleanedCpf = cpf.replace(/[^\d]/g, '');
 
+    // Verifica se tem 11 dígitos
+    if (cleanedCpf.length !== 11) {
+        return false;
+    }
+
+    // Verifica se todos os dígitos são iguais (ex: "111.111.111-11") - inválido para CPF
+    if (/^(\d)\1{10}$/.test(cleanedCpf)) {
+        return false;
+    }
+
+    let sum = 0;
+    let remainder;
+
+    // Validação do primeiro dígito verificador
     for (let i = 1; i <= 9; i++) {
-        soma = soma + parseInt(cpf.substring(i-1, i)) * (11 - i);
+        sum += parseInt(cleanedCpf.substring(i - 1, i)) * (11 - i);
     }
-    resto = (soma * 10) % 11;
-    if ((resto === 10) || (resto === 11)) resto = 0;
-    if (resto !== parseInt(cpf.substring(9, 10))) return false;
+    remainder = (sum * 10) % 11;
 
-    soma = 0;
+    if ((remainder === 10) || (remainder === 11)) {
+        remainder = 0;
+    }
+    if (remainder !== parseInt(cleanedCpf.substring(9, 10))) {
+        return false;
+    }
+
+    sum = 0;
+    // Validação do segundo dígito verificador
     for (let i = 1; i <= 10; i++) {
-        soma = soma + parseInt(cpf.substring(i-1, i)) * (12 - i);
+        sum += parseInt(cleanedCpf.substring(i - 1, i)) * (12 - i);
     }
-    resto = (soma * 10) % 11;
-    if ((resto === 10) || (resto === 11)) resto = 0;
-    if (resto !== parseInt(cpf.substring(10, 11))) return false;
+    remainder = (sum * 10) % 11;
 
-    return true;
-}
+    if ((remainder === 10) || (remainder === 11)) {
+        remainder = 0;
+    }
+    if (remainder !== parseInt(cleanedCpf.substring(10, 11))) {
+        return false;
+    }
 
-module.exports = { validarCPF };
+    return true; // CPF válido
+};
+
+module.exports = {
+    validarCPF
+};

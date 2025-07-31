@@ -4,16 +4,15 @@ const AnimalController = require('../controllers/AnimalController');
 const AuthMiddleware = require('../middleware/AuthMiddleware');
 
 // Rota para criar um novo animal (protegida)
-router.post('/', AuthMiddleware, AnimalController.criar);
+router.post('/', AuthMiddleware.verifyToken, AnimalController.criar);
 
 // Rota para atualizar um animal (protegida)
-router.put('/:id', AuthMiddleware, AnimalController.atualizar);
+router.put('/:id', AuthMiddleware.verifyToken, AnimalController.atualizar);
 
 // Rota para listar todos os animais (pública)
 router.get('/', AnimalController.listarTodos);
 
 // Rota para buscar um animal por ID (pública)
 router.get('/:id', AnimalController.buscarPorId);
-
 
 module.exports = router;
